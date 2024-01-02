@@ -44,8 +44,8 @@ class ToDoItemCreateListView(generics.ListCreateAPIView):
                 page_number = 1
 
             paginator = Paginator(serializer.data, result)
-            pagee = request.GET.get('page', page_number)
-            data = paginator.page(pagee)
+            pagenumber = request.GET.get('page', page_number)
+            data = paginator.page(pagenumber)
 
             return Response({
                 'status': True,
