@@ -4,12 +4,10 @@ from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from .models import ToDoItem
 from .serializers import ToDoItemSerializer
-# from django.contrib.auth.models import User
-# from django.contrib.auth import authenticate
-# from rest_framework.authtoken.models import Token
 from .serializers import UserSignupSerializer, ToDoItemSerializer
-# from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from django.core.paginator import Paginator
+from django.db.models import Q
 
 
 class SignUpView(generics.CreateAPIView):
@@ -25,15 +23,40 @@ class ToDoItemCreateListView(generics.ListCreateAPIView):
 
         if not pk:
             user = request.user
-            todos = ToDoItem.objects.filter(user=user)
+
+            search_query = request.headers.get('Searchqueries')
+
+            if search_query:
+
+                todos = ToDoItem.objects.filter(
+                    (Q(title__icontains=search_query)
+                     | Q(description__icontains=search_query))
+                )
+            else:
+                todos = ToDoItem.objects.filter(user=user)
+
             serializer = ToDoItemSerializer(todos, many=True)
+            result = 5
+            page = request.GET.get('page')
+            try:
+                page_number = int(page) if page else 1
+            except ValueError:
+                page_number = 1
+
+            paginator = Paginator(serializer.data, result)
+            pagee = request.GET.get('page', page_number)
+            data = paginator.page(pagee)
+
             return Response({
                 'status': True,
-                'data': serializer.data,
-                'message': 'todo fetched successfully'
+                'data': data.object_list,
+                'message': 'ToDoItems fetched successfully',
+                'total_pages': paginator.num_pages,
+                'current_page': data.number
             })
-            
+
         else:
+
             user = request.user
             todo = ToDoItem.objects.filter(user=user, id=pk).first()
             serializer = ToDoItemSerializer(todo)
@@ -82,7 +105,7 @@ class ToDoItemCreateListView(generics.ListCreateAPIView):
                     'message': 'Invalid ID or unauthorized',
                     'data': {}
                 }, status=status.HTTP_404_NOT_FOUND)
-            
+
             if todo.image:
                 todo.image.delete()
 
@@ -109,7 +132,6 @@ class ToDoItemCreateListView(generics.ListCreateAPIView):
             if 'image' in data and previous_image:
                 previous_image.delete(save=True)
 
-
             serializer = ToDoItemSerializer(obj, data=data, partial=True)
             if not serializer.is_valid():
                 return Response({
@@ -117,7 +139,7 @@ class ToDoItemCreateListView(generics.ListCreateAPIView):
                     'message': 'invalid fields',
                     'data': serializer.errors
                 })
-            
+
             serializer.save()
 
             return Response({

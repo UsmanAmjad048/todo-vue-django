@@ -58,6 +58,14 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
 
 ]
+CORS_ALLOW_HEADERS = [
+    'Accept',
+    'Accept-Language',
+    'Content-Language',
+    'Content-Type',
+    'Authorization',
+    'Searchqueries',
+]
 
 ROOT_URLCONF = 'app.urls'
 
