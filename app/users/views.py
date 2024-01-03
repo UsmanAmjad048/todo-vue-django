@@ -24,7 +24,8 @@ class ToDoItemCreateListView(generics.ListCreateAPIView):
         if not pk:
             user = request.user
 
-            search_query = request.headers.get('Searchqueries')
+            search_query = request.GET.get('search')
+
 
             if search_query:
 
